@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="pt-PT" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SONIC-X1 DIY | Projeto Coluna Bluetooth Hi-Fi Portátil</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        industrial: {
+                            950: '#090a0d',
+                            900: '#111318',
+                            800: '#1a1d24',
+                            700: '#262b36',
+                            600: '#373e4d',
+                        },
+                        amberpro: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        },
+                        cyanpro: {
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Estilos personalizados para estética Industrial Audio Pro */
+        body {
+            background-color: #090a0d;
+            color: #e2e8f0;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(245, 158, 11, 0.06) 0%, transparent 40%),
+                radial-gradient(circle at 85% 80%, rgba(6, 182, 212, 0.06) 0%, transparent 40%),
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+        }
+
+        /* Animação de vibração dos woofers e radiador passivo durante o teste de som */
+        @keyframes bassThump {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.045); }
+        }
+
+        @keyframes tweeterShimmer {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.02); filter: brightness(1.3); }
+        }
+
+        .woofer-active {
+            animation: bassThump var(--beat-speed, 0.45s) infinite ease-in-out;
+            transform-origin: center;
+            transform-box: fill-box;
+        }
+
+        .tweeter-active {
+            animation: tweeterShimmer 0.12s infinite ease-in-out;
+            transform-origin: center;
+            transform-box: fill-box;
+        }
+
+        /* Estilo de range slider industrial */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #f59e0b;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+            border: 2px solid #090a0d;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #262b36;
+            border-radius: 999px;
+        }
+
+        /* Transições suaves para Modo Raio-X */
+        .xray-layer {
+            transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1), transform 0.45s ease;
+        }
+
+        /* Fluxo animado nos cabos elétricos */
+        @keyframes dashFlow {
+            to {
+                stroke-dashoffset: -24;
+            }
+        }
+        .wire-flow {
+            stroke-dasharray: 6 6;
+            animation: dashFlow 1s linear infinite;
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-amberpro-500 selection:text-industrial-950 overflow-x-hidden">
+
+    <!-- BARRA DE NAVEGAÇÃO SUPERIOR -->
+    <header class="sticky top-0 z-50 backdrop-blur-md bg-industrial-950/85 border-b border-industrial-700/70">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logótipo -->
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-amberpro-500 to-amberpro-600 flex items-center justify-center shadow-lg shadow-amberpro-500/20 text-industrial-950 font-bold">
+                        <i data-lucide="speaker" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <span class="font-mono font-bold text-lg tracking-wider text-white">SONIC-X1 <span class="text-amberpro-500">DIY</span></span>
+                        <span class="hidden sm:inline-block ml-2 text-xs font-mono px-2 py-0.5 rounded bg-industrial-800 text-cyanpro-400 border border-cyanpro-500/30">REV 2.4 PRO</span>
+                    </div>
+                </div>
+
+                <!-- Links Desktop -->
+                <nav class="hidden md:flex items-center space-x-6 text-sm font-medium text-slate-300">
+                    <a href="#visualizador" class="hover:text-amberpro-400 transition-colors">Visualizador 2D</a>
+                    <a href="#especificacoes" class="hover:text-amberpro-400 transition-colors">Especificações</a>
+                    <a href="#materiais" class="hover:text-amberpro-400 transition-colors">Lista BOM (€)</a>
+                    <a href="#esquema-eletrico" class="hover:text-amberpro-400 transition-colors">Esquema Elétrico</a>
+                    <a href="#montagem" class="hover:text-amberpro-400 transition-colors">Montagem</a>
+                    <a href="#autonomia" class="hover:text-cyanpro-400 transition-colors">Simulador Bateria</a>
+                </nav>
+
+                <!-- Botão Ação Rápida -->
+                <div class="flex items-center gap-2">
+                    <button onclick="scrollToSection('materiais')" class="px-3.5 py-2 rounded-lg bg-industrial-800 hover:bg-industrial-700 border border-industrial-600 text-xs font-mono font-semibold text-amberpro-400 transition-all flex items-center gap-1.5">
+                        <i data-lucide="calculator" class="w-4 h-4"></i>
+                        <span id="nav-budget-badge">€0.00</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 1. HERO SECTION & VISUALIZADOR INTERATIVO 2D / RAIO-X -->
+    <section id="visualizador" class="pt-8 pb-16 lg:pt-12 lg:pb-24 border-b border-industrial-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Cabeçalho do Projeto -->
+            <div class="text-center max-w-3xl mx-auto mb-10">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-industrial-800/90 border border-industrial-700 text-xs font-mono text-cyanpro-400 mb-4">
+                    <span class="w-2 h-2 rounded-full bg-cyanpro-400 animate-pulse"></span>
+                    PROJETO OPEN-HARDWARE • ENGENHARIA ACÚSTICA DIY
+                </div>
+                <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white mb-4">
+                    Coluna Bluetooth Hi-Fi <span class="text-transparent bg-clip-text bg-gradient-to-r from-amberpro-400 to-amberpro-600">SONIC-X1</span>
+                </h1>
+                <p class="text-slate-400 text-base sm:text-lg leading-relaxed">
+                    Sistema estéreo portátil de 2.1 canais com amplificação Classe-D TPA3116D2 (2×50W), radiador passivo sintonizado a 48Hz, DSP Bluetooth 5.3 e pack de baterias de lítio 3S 18650 (12.6V).
+                </p>
+            </div>
+
+            <!-- Contentor Principal do Visualizador -->
+            <div class="bg-industrial-900/90 border border-industrial-700/80 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-2xl relative overflow-hidden">
+                
+                <!-- Barra de Controlos Interativos Superior -->
+                <div class="flex flex-wrap items-center justify-between gap-4 pb-6 mb-6 border-b border-industrial-800">
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <!-- Botão Vista Raio-X -->
+                        <button id="btn-xray" onclick="toggleXray()" class="px-4 py-2.5 rounded-xl font-mono text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 bg-industrial-800 text-slate-200 border border-industrial-600 hover:border-cyanpro-500">
+                            <i data-lucide="scan" class="w-4 h-4 text-cyanpro-400"></i>
+                            <span id="xray-label">VISTA RAIO-X: OFF</span>
+                        </button>
+
+                        <!-- Botão Ligar/Desligar LEDs -->
+                        <button id="btn-leds" onclick="toggleLeds()" class="px-4 py-2.5 rounded-xl font-mono text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 bg-amberpro-500/15 text-amberpro-400 border border-amberpro-500/50">
+                            <i data-lucide="lightbulb" class="w-4 h-4"></i>
+                            <span id="led-label">LEDS ANEL: ON</span>
+                        </button>
+                    </div>
+
+                    <!-- Controlos de Teste de Áudio Real (Web Audio API) -->
+                    <div class="flex flex-wrap items-center gap-2 bg-industrial-950 p-1.5 rounded-xl border border-industrial-800">
+                        <span class="text-xs font-mono text-slate-400 px-2 hidden sm:inline">GERADOR DE ÁUDIO:</span>
+                        <button onclick="playAudioTest('bass')" id="btn-audio-bass" class="audio-btn px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-industrial-800 hover:bg-industrial-700 text-slate-300 transition-all flex items-center gap-1.5">
+                            <i data-lucide="waves" class="w-3.5 h-3.5 text-amberpro-500"></i>
+                            55Hz Sub-Bass
+                        </button>
+                        <button onclick="playAudioTest('sweep')" id="btn-audio-sweep" class="audio-btn px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-industrial-800 hover:bg-industrial-700 text-slate-300 transition-all flex items-center gap-1.5">
+                            <i data-lucide="activity" class="w-3.5 h-3.5 text-cyanpro-400"></i>
+                            Sweep 40Hz-12kHz
+                        </button>
+                        <button onclick="playAudioTest('chord')" id="btn-audio-chord" class="audio-btn px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-industrial-800 hover:bg-industrial-700 text-slate-300 transition-all flex items-center gap-1.5">
+                            <i data-lucide="music" class="w-3.5 h-3.5 text-emerald-400"></i>
+                            Acorde Hi-Fi
+                        </button>
+                        <button onclick="stopAudioTest()" id="btn-audio-stop" class="px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 transition-all hidden">
+                            STOP
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Área do Diagrama SVG Interativo da Coluna -->
+                <div class="relative w-full flex flex-col items-center justify-center py-2">
+                    <div class="w-full max-w-4xl">
+                        <svg id="speaker-svg" viewBox="0 0 920 430" class="w-full h-auto drop-shadow-2xl select-none">
+                            <defs>
+                                <!-- Gradientes Metálicos e Madeira -->
+                                <linearGradient id="cabinetGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="#272b34"/>
+                                    <stop offset="50%" stop-color="#1b1e25"/>
+                                    <stop offset="100%" stop-color="#121419"/>
+                                </linearGradient>
+                                <linearGradient id="bezelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#3f4654"/>
+                                    <stop offset="100%" stop-color="#181b21"/>
+                                </linearGradient>
+                                <radialGradient id="coneGrad" cx="50%" cy="50%" r="50%">
+                                    <stop offset="0%" stop-color="#14161a"/>
+                                    <stop offset="65%" stop-color="#232730"/>
+                                    <stop offset="92%" stop-color="#111317"/>
+                                    <stop offset="100%" stop-color="#383f4d"/>
+                                </radialGradient>
+                                <radialGradient id="dustCapGrad" cx="35%" cy="35%" r="65%">
+                                    <stop offset="0%" stop-color="#4b5363"/>
+                                    <stop offset="100%" stop-color="#121419"/>
+                                </radialGradient>
+                                <radialGradient id="tweeterDome" cx="35%" cy="35%" r="65%">
+                                    <stop offset="0%" stop-color="#f59e0b"/>
+                                    <stop offset="50%" stop-color="#b45309"/>
+                                    <stop offset="100%" stop-color="#451a03"/>
+                                </radialGradient>
+                                <filter id="amberGlow" x="-30%" y="-30%" width="160%" height="160%">
+                                    <feGaussianBlur stdDeviation="5" result="blur" />
+                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                </filter>
+                                <filter id="cyanGlow" x="-30%" y="-30%" width="160%" height="160%">
+                                    <feGaussianBlur stdDeviation="4" result="blur" />
+                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                </filter>
+                                <!-- Padrão de Espuma Acústica Interna -->
+                                <pattern id="foamPattern" width="12" height="12" patternUnits="userSpaceOnUse">
+                                    <rect width="12" height="12" fill="#161920"/>
+                                    <circle cx="3" cy="3" r="1.5" fill="#262b36"/>
+                                    <circle cx="9" cy="9" r="1.5" fill="#262b36"/>
+                                </pattern>
+                            </defs>
+
+                            <!-- COTA TÉCNICA SUPERIOR (LARGURA) -->
+                            <g class="text-slate-400 font-mono text-xs" opacity="0.85">
+                                <line x1="80" y1="24" x2="840" y2="24" stroke="#475569" stroke-width="1" stroke-dasharray="4 4"/>
+                                <line x1="80" y1="16" x2="80" y2="32" stroke="#f59e0b" stroke-width="1.5"/>
+                                <line x1="840" y1="16" x2="840" y2="32" stroke="#f59e0b" stroke-width="1.5"/>
+                                <rect x="385" y="12" width="150" height="22" rx="4" fill="#090a0d"/>
+                                <text x="460" y="27" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="bold">380 mm (MDF 15mm)</text>
+                            </g>
+
+                            <!-- COTA TÉCNICA LATERAL (ALTURA) -->
+                            <g class="font-mono" opacity="0.85">
+                                <line x1="38" y1="55" x2="38" y2="365" stroke="#475569" stroke-width="1" stroke-dasharray="4 4"/>
+                                <line x1="30" y1="55" x2="46" y2="55" stroke="#06b6d4" stroke-width="1.5"/>
+                                <line x1="30" y1="365" x2="46" y2="365" stroke="#06b6d4" stroke-width="1.5"/>
+                                <text x="26" y="210" text-anchor="middle" fill="#22d3ee" font-size="12" font-weight="bold" transform="rotate(-90 26 210)">195 mm</text>
+                            </g>
+
+                            <!-- PÉS DE BORRACHA ANTI-VIBRAÇÃO -->
+                            <rect x="130" y="365" width="54" height="14" rx="4" fill="#0f1115" stroke="#334155" stroke-width="1.5"/>
+                            <rect x="736" y="365" width="54" height="14" rx="4" fill="#0f1115" stroke="#334155" stroke-width="1.5"/>
+
+                            <!-- ALÇA SUPERIOR DE TRANSPORTE EM ALUMÍNIO/COURO -->
+                            <path d="M 320 55 L 320 42 Q 320 34 330 34 L 590 34 Q 600 34 600 42 L 600 55" fill="none" stroke="#373e4d" stroke-width="7" stroke-linecap="round"/>
+                            <rect x="312" y="49" width="16" height="8" rx="2" fill="#f59e0b"/>
+                            <rect x="592" y="49" width="16" height="8" rx="2" fill="#f59e0b"/>
+
+                            <!-- CORPO PRINCIPAL DA CAIXA ACÚSTICA -->
+                            <rect x="80" y="55" width="760" height="310" rx="24" fill="url(#cabinetGrad)" stroke="#475569" stroke-width="3"/>
+                            
+                            <!-- PAREDE INTERNA MDF 15MM (Visível no modo Raio-X) -->
+                            <g id="internal-structure" class="xray-layer" opacity="0">
+                                <!-- Espessura MDF -->
+                                <rect x="95" y="70" width="730" height="280" rx="14" fill="url(#foamPattern)" stroke="#d97706" stroke-width="2" stroke-dasharray="6 3"/>
+                                
+                                <!-- Divisórias Internas das Câmaras Acústicas -->
+                                <line x1="335" y1="70" x2="335" y2="350" stroke="#d97706" stroke-width="6"/>
+                                <line x1="585" y1="70" x2="585" y2="350" stroke="#d97706" stroke-width="6"/>
+                                <text x="215" y="92" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="10">CÂMARA ESQ. (2.4L)</text>
+                                <text x="460" y="92" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="10">CÂMARA CENTRAL ELETRÓNICA</text>
+                                <text x="705" y="92" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="10">CÂMARA DIR. (2.4L)</text>
+
+                                <!-- PACK DE BATERIAS 3S 18650 (Câmara Central Inferior) -->
+                                <g transform="translate(365, 255)">
+                                    <rect x="0" y="0" width="190" height="78" rx="8" fill="#0f172a" stroke="#22d3ee" stroke-width="1.5"/>
+                                    <!-- 3 Células 18650 -->
+                                    <rect x="10" y="10" width="52" height="58" rx="4" fill="#0891b2" opacity="0.85"/>
+                                    <rect x="69" y="10" width="52" height="58" rx="4" fill="#0891b2" opacity="0.85"/>
+                                    <rect x="128" y="10" width="52" height="58" rx="4" fill="#0891b2" opacity="0.85"/>
+                                    <text x="95" y="36" text-anchor="middle" fill="#ffffff" font-family="JetBrains Mono" font-size="10" font-weight="bold">PACK 3S 18650</text>
+                                    <text x="95" y="52" text-anchor="middle" fill="#cffafe" font-family="JetBrains Mono" font-size="9">12.6V • 3500mAh + BMS</text>
+                                </g>
+
+                                <!-- PLACA AMPLIFICADORA TPA3116D2 + DSP (Câmara Central Superior) -->
+                                <g transform="translate(365, 112)">
+                                    <rect x="0" y="0" width="190" height="122" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="1.5"/>
+                                    <!-- Dissipador de Calor em Alumínio -->
+                                    <rect x="65" y="25" width="60" height="45" rx="3" fill="#334155" stroke="#94a3b8" stroke-width="1"/>
+                                    <line x1="75" y1="25" x2="75" y2="70" stroke="#1e293b" stroke-width="3"/>
+                                    <line x1="85" y1="25" x2="85" y2="70" stroke="#1e293b" stroke-width="3"/>
+                                    <line x1="95" y1="25" x2="95" y2="70" stroke="#1e293b" stroke-width="3"/>
+                                    <line x1="105" y1="25" x2="105" y2="70" stroke="#1e293b" stroke-width="3"/>
+                                    <line x1="115" y1="25" x2="115" y2="70" stroke="#1e293b" stroke-width="3"/>
+                                    <!-- Condensadores Eletrolíticos -->
+                                    <circle cx="30" cy="45" r="14" fill="#1e293b" stroke="#fbbf24" stroke-width="1.5"/>
+                                    <circle cx="30" cy="85" r="14" fill="#1e293b" stroke="#fbbf24" stroke-width="1.5"/>
+                                    <!-- Indutores Toroidais -->
+                                    <circle cx="158" cy="45" r="13" fill="#b45309" stroke="#fcd34d" stroke-width="1.5"/>
+                                    <circle cx="158" cy="85" r="13" fill="#b45309" stroke="#fcd34d" stroke-width="1.5"/>
+                                    <text x="95" y="108" text-anchor="middle" fill="#6ee7b7" font-family="JetBrains Mono" font-size="9.5" font-weight="bold">AMP TPA3116D2 + BT 5.3</text>
+                                </g>
+
+                                <!-- Cablagem Interna Esquemática -->
+                                <path d="M 365 170 L 220 215" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="5 3"/>
+                                <path d="M 365 180 L 220 225" stroke="#1e293b" stroke-width="2.5"/>
+                                <path d="M 555 170 L 700 215" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="5 3"/>
+                                <path d="M 555 180 L 700 225" stroke="#1e293b" stroke-width="2.5"/>
+                            </g>
+
+                            <!-- PAINEL FRONTAL EXTERIOR (Fica semitransparente no modo Raio-X) -->
+                            <g id="exterior-front" class="xray-layer" opacity="1">
+                                <!-- Moldura Frontal Chanfrada -->
+                                <rect x="92" y="67" width="736" height="286" rx="18" fill="none" stroke="#334155" stroke-width="1.5"/>
+                                
+                                <!-- Parafusos Hexagonais nos Cantos -->
+                                <circle cx="108" cy="83" r="4" fill="#475569"/>
+                                <circle cx="812" cy="83" r="4" fill="#475569"/>
+                                <circle cx="108" cy="337" r="4" fill="#475569"/>
+                                <circle cx="812" cy="337" r="4" fill="#475569"/>
+
+                                <!-- PAINEL DE CONTROLO SUPERIOR CENTRAL -->
+                                <rect x="365" y="80" width="190" height="44" rx="10" fill="#0f1115" stroke="#334155" stroke-width="1.5"/>
+                                <!-- Botão Power -->
+                                <circle cx="395" cy="102" r="11" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+                                <path d="M 395 96 L 395 102" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+                                <!-- Botões Volume / BT -->
+                                <circle cx="430" cy="102" r="8" fill="#1e293b" stroke="#64748b" stroke-width="1.5"/>
+                                <text x="430" y="105" text-anchor="middle" fill="#cbd5e1" font-size="10" font-family="monospace">-</text>
+                                <circle cx="460" cy="102" r="8" fill="#1e293b" stroke="#64748b" stroke-width="1.5"/>
+                                <text x="460" y="105" text-anchor="middle" fill="#cbd5e1" font-size="10" font-family="monospace">+</text>
+                                <circle cx="490" cy="102" r="8" fill="#1e293b" stroke="#06b6d4" stroke-width="1.5"/>
+                                <circle cx="490" cy="102" r="3" fill="#22d3ee" filter="url(#cyanGlow)"/>
+                                <!-- Indicador LED de Bateria (4 barras) -->
+                                <rect x="512" y="96" width="5" height="12" rx="1" fill="#10b981"/>
+                                <rect x="520" y="96" width="5" height="12" rx="1" fill="#10b981"/>
+                                <rect x="528" y="96" width="5" height="12" rx="1" fill="#10b981"/>
+                                <rect x="536" y="96" width="5" height="12" rx="1" fill="#334155"/>
+
+                                <!-- RADIADOR PASSIVO CENTRAL (Bass Radiator 4"x6" Oval/Retangular com cantos redondos) -->
+                                <g id="passive-radiator" class="speaker-driver">
+                                    <rect x="375" y="145" width="170" height="175" rx="34" fill="url(#bezelGrad)" stroke="#475569" stroke-width="2"/>
+                                    <!-- Suspensão de Borracha (Surround) -->
+                                    <rect x="387" y="157" width="146" height="151" rx="26" fill="#111317" stroke="#262b36" stroke-width="6"/>
+                                    <!-- Membrana Plana de Fibra de Carbono -->
+                                    <rect x="398" y="168" width="124" height="129" rx="18" fill="url(#coneGrad)" stroke="#374151" stroke-width="1.5"/>
+                                    <!-- Logótipo Central no Radiador -->
+                                    <rect x="425" y="220" width="70" height="24" rx="4" fill="#090a0d" stroke="#f59e0b" stroke-width="1"/>
+                                    <text x="460" y="236" text-anchor="middle" fill="#f59e0b" font-family="JetBrains Mono" font-size="11" font-weight="bold" letter-spacing="1">SONIC-X1</text>
+                                </g>
+                            </g>
+
+                            <!-- WOOFER ESQUERDO (4 Polegadas Hi-Fi) -->
+                            <g id="woofer-left" class="speaker-driver" transform="translate(215, 225)">
+                                <!-- Anel LED Âmbar -->
+                                <circle id="led-ring-left" cx="0" cy="0" r="98" fill="none" stroke="#f59e0b" stroke-width="4" filter="url(#amberGlow)" opacity="0.95"/>
+                                <!-- Aro Metálico -->
+                                <circle cx="0" cy="0" r="93" fill="url(#bezelGrad)" stroke="#475569" stroke-width="2"/>
+                                <!-- 6 Parafusos de Fixação -->
+                                <circle cx="0" cy="-84" r="3" fill="#0f172a"/>
+                                <circle cx="73" cy="-42" r="3" fill="#0f172a"/>
+                                <circle cx="73" cy="42" r="3" fill="#0f172a"/>
+                                <circle cx="0" cy="84" r="3" fill="#0f172a"/>
+                                <circle cx="-73" cy="42" r="3" fill="#0f172a"/>
+                                <circle cx="-73" cy="-42" r="3" fill="#0f172a"/>
+                                <!-- Suspensão (Surround) -->
+                                <circle cx="0" cy="0" r="76" fill="#121418" stroke="#1f242d" stroke-width="8"/>
+                                <!-- Cone do Woofer -->
+                                <circle cx="0" cy="0" r="66" fill="url(#coneGrad)"/>
+                                <!-- Calota Central (Dust Cap) -->
+                                <circle cx="0" cy="0" r="24" fill="url(#dustCapGrad)" stroke="#475569" stroke-width="1"/>
+                            </g>
+
+                            <!-- WOOFER DIREITO (4 Polegadas Hi-Fi) -->
+                            <g id="woofer-right" class="speaker-driver" transform="translate(705, 225)">
+                                <!-- Anel LED Âmbar -->
+                                <circle id="led-ring-right" cx="0" cy="0" r="98" fill="none" stroke="#f59e0b" stroke-width="4" filter="url(#amberGlow)" opacity="0.95"/>
+                                <!-- Aro Metálico -->
+                                <circle cx="0" cy="0" r="93" fill="url(#bezelGrad)" stroke="#475569" stroke-width="2"/>
+                                <!-- 6 Parafusos de Fixação -->
+                                <circle cx="0" cy="-84" r="3" fill="#0f172a"/>
+                                <circle cx="73" cy="-42" r="3" fill="#0f172a"/>
+                                <circle cx="73" cy="42" r="3" fill="#0f172a"/>
+                                <circle cx="0" cy="84" r="3" fill="#0f172a"/>
+                                <circle cx="-73" cy="42" r="3" fill="#0f172a"/>
+                                <circle cx="-73" cy="-42" r="3" fill="#0f172a"/>
+                                <!-- Suspensão (Surround) -->
+                                <circle cx="0" cy="0" r="76" fill="#121418" stroke="#1f242d" stroke-width="8"/>
+                                <!-- Cone do Woofer -->
+                                <circle cx="0" cy="0" r="66" fill="url(#coneGrad)"/>
+                                <!-- Calota Central (Dust Cap) -->
+                                <circle cx="0" cy="0" r="24" fill="url(#dustCapGrad)" stroke="#475569" stroke-width="1"/>
+                            </g>
+
+                            <!-- TWEETER ESQUERDO (1" Domo de Seda) -->
+                            <g id="tweeter-left" transform="translate(132, 112)">
+                                <circle cx="0" cy="0" r="28" fill="url(#bezelGrad)" stroke="#475569" stroke-width="1.5"/>
+                                <circle cx="0" cy="0" r="20" fill="#0f1115"/>
+                                <circle cx="0" cy="0" r="13" fill="url(#tweeterDome)"/>
+                                <!-- Difusor Acústico -->
+                                <line x1="-18" y1="0" x2="18" y2="0" stroke="#1e293b" stroke-width="2"/>
+                            </g>
+
+                            <!-- TWEETER DIREITO (1" Domo de Seda) -->
+                            <g id="tweeter-right" transform="translate(788, 112)">
+                                <circle cx="0" cy="0" r="28" fill="url(#bezelGrad)" stroke="#475569" stroke-width="1.5"/>
+                                <circle cx="0" cy="0" r="20" fill="#0f1115"/>
+                                <circle cx="0" cy="0" r="13" fill="url(#tweeterDome)"/>
+                                <!-- Difusor Acústico -->
+                                <line x1="-18" y1="0" x2="18" y2="0" stroke="#1e293b" stroke-width="2"/>
+                            </g>
+
+                            <!-- ETIQUETAS INTERATIVAS (HOTSPOTS) -->
+                            <g class="font-mono text-xs">
+                                <!-- Hotspot Tweeter -->
+                                <g transform="translate(132, 70)">
+                                    <rect x="-46" y="-12" width="92" height="20" rx="4" fill="#090a0d" stroke="#f59e0b" stroke-width="1"/>
+                                    <text x="0" y="2" text-anchor="middle" fill="#fbbf24" font-size="10">TWEETER 1" 25W</text>
+                                </g>
+                                <!-- Hotspot Woofer -->
+                                <g transform="translate(215, 342)">
+                                    <rect x="-58" y="-10" width="116" height="20" rx="4" fill="#090a0d" stroke="#06b6d4" stroke-width="1"/>
+                                    <text x="0" y="4" text-anchor="middle" fill="#22d3ee" font-size="10">WOOFER 4" 50W 4Ω</text>
+                                </g>
+                                <!-- Hotspot Radiador Passivo -->
+                                <g transform="translate(460, 342)">
+                                    <rect x="-72" y="-10" width="144" height="20" rx="4" fill="#090a0d" stroke="#94a3b8" stroke-width="1"/>
+                                    <text x="0" y="4" text-anchor="middle" fill="#e2e8f0" font-size="10">RADIADOR PASSIVO 48Hz</text>
+                                </g>
+                                <!-- Hotspot Woofer Dir -->
+                                <g transform="translate(705, 342)">
+                                    <rect x="-58" y="-10" width="116" height="20" rx="4" fill="#090a0d" stroke="#06b6d4" stroke-width="1"/>
+                                    <text x="0" y="4" text-anchor="middle" fill="#22d3ee" font-size="10">WOOFER 4" 50W 4Ω</text>
+                                </g>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <!-- Barra de Estado do Visualizador / Analisador de Frequência -->
+                    <div class="w-full max-w-4xl mt-4 pt-4 border-t border-industrial-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono text-slate-400">
+                        <div class="flex items-center gap-2">
+                            <span id="audio-status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+                            <span id="audio-status-text">ÁUDIO EM STANDBY • Clique num botão acima para testar a resposta acústica</span>
+                        </div>
+                        <div class="text-slate-500">
+                            VOLUME INTERNO ÚTIL: <span class="text-slate-200">4.8 Litros (2 × 2.4L selados)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. ESPECIFICAÇÕES TÉCNICAS DO PROJETO -->
+    <section id="especificacoes" class="py-16 border-b border-industrial-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+                <div>
+                    <span class="text-xs font-mono uppercase tracking-widest text-amberpro-500 font-semibold">01 // ENGENHARIA & ACÚSTICA</span>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">Especificações Técnicas</h2>
+                </div>
+                <p class="text-sm text-slate-400 max-w-md">
+                    Arquitetura acústica otimizada para resposta plana em médios/agudos e extensão de sub-graves sem distorção de fluxo de ar.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Spec 1 -->
+                <div class="bg-industrial-900 border border-industrial-800 hover:border-amberpro-500/40 rounded-2xl p-6 transition-all">
+                    <div class="w-10 h-10 rounded-xl bg-amberpro-500/10 border border-amberpro-500/30 flex items-center justify-center text-amberpro-400 mb-4">
+                        <i data-lucide="zap" class="w-5 h-5"></i>
+                    </div>
+                    <div class="text-xs font-mono text-slate-400 uppercase">Potência de Saída RMS</div>
+                    <div class="text-2xl font-bold text-white mt-1 font-mono">100W RMS <span class="text-sm font-normal text-slate-400">(2 × 50W @ 4Ω)</span></div>
+                    <p class="text-sm text-slate-400 mt-2">
+                        Chipset Texas Instruments <strong class="text-slate-200">TPA3116D2</strong> Classe-D de alta eficiência (&gt;90%) com dissipador passivo em alumínio anodizado.
+                    </p>
+                </div>
+
+                <!-- Spec 2 -->
+                <div class="bg-industrial-900 border border-industrial-800 hover:border-cyanpro-500/40 rounded-2xl p-6 transition-all">
+                    <div class="w-10 h-10 rounded-xl bg-cyanpro-500/10 border border-cyanpro-500/30 flex items-center justify-center text-cyanpro-400 mb-4">
+                        <i data-lucide="activity" class="w-5 h-5"></i>
+                    </div>
+                    <div class="text-xs font-mono text-slate-400 uppercase">Resposta de Frequência</div>
+                    <div class="text-2xl font-bold text-white mt-1 font-mono">45 Hz – 20 kHz <span class="text-sm font-normal text-slate-400">(±3dB)</span></div>
+                    <p class="text-sm text-slate-400 mt-2">
+                        Crossover passivo de 2ª ordem (12dB/oitava) sintonizado nos <strong class="text-slate-200">3.200 Hz</strong> entre woofers de 4" e tweeters de domo de seda.
+                    </p>
+                </div>
+
+                <!-- Spec 3 -->
+                <div class="bg-industrial-900 border border-industrial-800 hover:border-amberpro-500/40 rounded-2xl p-6 transition-all">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-4">
+                        <i data-lucide="battery-charging" class="w-5 h-5"></i>
+                    </div>
+                    <div class="text-xs font-mono text-slate-400 uppercase">Sistema de Alimentação</div>
+                    <div class="text-2xl font-bold text-white mt-1 font-mono">12.6V Li-Ion <span class="text-sm font-normal text-slate-400">(3S 18650)</span></div>
+                    <p class="text-sm text-slate-400 mt-2">
+                        Pack de 3 ou 6 células 18650 (3500mAh a 7000mAh) gerido por placa <strong class="text-slate-200">BMS 3S 20A</strong> com balanceamento ativo e proteção térmica.
+                    </p>
+                </div>
+
+                <!-- Spec 4 -->
+                <div class="bg-industrial-900 border border-industrial-800 hover:border-cyanpro-500/40 rounded-2xl p-6 transition-all">
+                    <div class="w-10 h-10 rounded-xl bg-cyanpro-500/10 border border-cyanpro-500/30 flex items-center justify-center text-cyanpro-400 mb-4">
+                        <i data-lucide="bluetooth" class="w-5 h-5"></i>
+                    </div>
+                    <div class="text-xs font-mono text-slate-400 uppercase">Conectividade & DSP</div>
+                    <div class="text-2xl font-bold text-white mt-1 font-mono">Bluetooth 5.3 <span class="text-sm font-normal text-slate-400">+ AAC / aptX</span></div>
+                    <p class="text-sm text-slate-400 mt-2">
+                        Processador digital de sinal (DSP) integrado para reforço dinâmico de graves (Dynamic Bass Boost) a baixo volume e entrada AUX 3.5mm.
+                    </p>
+                </div>
+
+                <!-- Spec 5 -->
+                <div class="bg-industrial-900 border border-industrial-800 hover:border-amberpro-500/40 rounded-2xl p-6 transition-all">
+                    <div class="w-10 h-10 rounded-xl bg-amberpro-500/10 border border-amberpro-500/30 flex items-center justify-center text-amberpro-400 mb-4">
+                        <i data-lucide="box" class="w-5 h-5"></i>
+                    </div>
+                    <div class="text-xs font-mono text-slate-400 uppercase">Dimensões & Gabinete</div>
+                    <div class="text-2xl font-bold text-white mt-1 font-mono">380 × 195 × 175 <span class="text-sm font-normal text-slate-400">mm</span></div>
+                    <p class="text-sm text-slate-400 mt-2">
+                        Construção rígida em <strong class="text-slate-200">MDF Hidrófugo de 15mm</strong> com reforços internos, câmaras seladas isoladas e revestimento em vinil texturado.
+                    </p>
+                </div>
+
+                <!-- Spec 6 -->
+                <div class="bg-industrial-900 border border-industrial-800 hover:border-cyanpro-500/40 rounded-2xl p-6 transition-all">
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-4">
+                        <i data-lucide="disc" class="w-5 h-5"></i>
+                    </div>
+                    <div class="text-xs font-mono text-slate-400 uppercase">Sintonia Acústica</div>
+                    <div class="text-2xl font-bold text-white mt-1 font-mono">Radiador Passivo <span class="text-sm font-normal text-slate-400">Fb = 48Hz</span></div>
+                    <p class="text-sm text-slate-400 mt-2">
+                        Elimina o ruído de sopro (port chuffing) dos tubos bass-reflex convencionais, mantendo a caixa 100% estanque contra poeiras e salpicos.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. LISTA DE MATERIAIS INTERATIVA (BOM - BILL OF MATERIALS) -->
+    <section id="materiais" class="py-16 border-b border-industrial-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col lg:flex-row lg:items-end justify-between mb-8 gap-4">
+                <div>
+                    <span class="text-xs font-mono uppercase tracking-widest text-amberpro-500 font-semibold">02 // ORÇAMENTO & COMPONENTES</span>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">Lista de Materiais (BOM)</h2>
+                    <p class="text-sm text-slate-400 mt-1">Marque os componentes que já possui ou comprou para calcular automaticamente o investimento restante.</p>
+                </div>
+
+                <!-- Painel Resumo de Custos -->
+                <div class="flex flex-wrap items-center gap-3 bg-industrial-900 border border-industrial-700 p-4 rounded-2xl">
+                    <div class="px-3 border-r border-industrial-700">
+                        <div class="text-[11px] font-mono text-slate-400 uppercase">Custo Total Projeto</div>
+                        <div id="bom-total-price" class="text-xl font-bold font-mono text-white">€0.00</div>
+                    </div>
+                    <div class="px-3 border-r border-industrial-700">
+                        <div class="text-[11px] font-mono text-emerald-400 uppercase">Já Adquirido</div>
+                        <div id="bom-owned-price" class="text-xl font-bold font-mono text-emerald-400">€0.00</div>
+                    </div>
+                    <div class="px-3">
+                        <div class="text-[11px] font-mono text-amberpro-400 uppercase">Falta Comprar</div>
+                        <div id="bom-remaining-price" class="text-xl font-bold font-mono text-amberpro-400">€0.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Barra de Progresso de Aquisição -->
+            <div class="mb-6 bg-industrial-900 p-4 rounded-xl border border-industrial-800">
+                <div class="flex justify-between text-xs font-mono mb-2">
+                    <span class="text-slate-400">PROGRESSO DE AQUISIÇÃO DE PEÇAS</span>
+                    <span id="bom-progress-text" class="text-cyanpro-400 font-bold">0 / 11 itens (0%)</span>
+                </div>
+                <div class="w-full h-2.5 bg-industrial-950 rounded-full overflow-hidden">
+                    <div id="bom-progress-bar" class="h-full bg-gradient-to-r from-amberpro-500 to-cyanpro-400 transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Tabela Responsiva BOM -->
+            <div class="bg-industrial-900 border border-industrial-800 rounded-2xl overflow-hidden shadow-xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-industrial-800 bg-industrial-950/60 text-xs font-mono text-slate-400 uppercase">
+                                <th class="py-4 px-4 w-12 text-center">Estado</th>
+                                <th class="py-4 px-4">Componente</th>
+                                <th class="py-4 px-4 hidden md:table-cell">Especificação Técnica</th>
+                                <th class="py-4 px-4 text-center">Qtd</th>
+                                <th class="py-4 px-4 text-right">Preço Est.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bom-table-body" class="divide-y divide-industrial-800/80 text-sm">
+                            <!-- Linhas geradas dinamicamente via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="p-4 bg-industrial-950/50 border-t border-industrial-800 flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-slate-400">
+                    <span>* Preços médios estimados em lojas de eletrónica europeias (IVA incluído).</span>
+                    <div class="flex gap-2">
+                        <button onclick="toggleAllBom(true)" class="px-3 py-1.5 rounded-lg bg-industrial-800 hover:bg-industrial-700 text-slate-200 transition-colors">Marcar Todos</button>
+                        <button onclick="toggleAllBom(false)" class="px-3 py-1.5 rounded-lg bg-industrial-800 hover:bg-industrial-700 text-slate-200 transition-colors">Limpar Seleção</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. ESQUEMA DE LIGAÇÕES ELÉTRICAS INTERATIVO (WIRING DIAGRAM) -->
+    <section id="esquema-eletrico" class="py-16 border-b border-industrial-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+                <div>
+                    <span class="text-xs font-mono uppercase tracking-widest text-cyanpro-400 font-semibold">03 // ELETRÓNICA & CABLAGEM</span>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">Esquema de Ligações Elétricas</h2>
+                    <p class="text-sm text-slate-400 mt-1">Fluxo completo de potência (12.6V) e sinal áudio. Passe o rato ou toque nos módulos para inspecionar.</p>
+                </div>
+
+                <!-- Filtros de Circuito -->
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="highlightCircuit('all')" class="circuit-btn px-3 py-1.5 rounded-lg text-xs font-mono bg-amberpro-500 text-industrial-950 font-bold">TODOS OS CIRCUITOS</button>
+                    <button onclick="highlightCircuit('power')" class="circuit-btn px-3 py-1.5 rounded-lg text-xs font-mono bg-industrial-800 text-slate-300 border border-industrial-700 hover:border-rose-500">ALIMENTAÇÃO DC</button>
+                    <button onclick="highlightCircuit('audio')" class="circuit-btn px-3 py-1.5 rounded-lg text-xs font-mono bg-industrial-800 text-slate-300 border border-industrial-700 hover:border-cyanpro-500">SAÍDA ÁUDIO</button>
+                </div>
+            </div>
+
+            <!-- Diagrama Elétrico SVG -->
+            <div class="bg-industrial-900 border border-industrial-800 rounded-2xl p-4 sm:p-6 shadow-2xl">
+                <div class="w-full overflow-x-auto">
+                    <svg id="wiring-svg" viewBox="0 0 960 440" class="w-full min-w-[760px] h-auto select-none">
+                        <!-- Fundo Grelha Técnica -->
+                        <rect x="0" y="0" width="960" height="440" rx="12" fill="#0c0e12"/>
+
+                        <!-- ==================== MÓDULO 1: PACK BATERIAS 3S ==================== -->
+                        <g transform="translate(30, 50)">
+                            <rect x="0" y="0" width="160" height="150" rx="10" fill="#161922" stroke="#334155" stroke-width="2"/>
+                            <text x="80" y="24" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="12" font-weight="bold">PACK 3S 18650</text>
+                            <text x="80" y="40" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="10">11.1V Nom / 12.6V Max</text>
+                            <!-- 3 Células -->
+                            <rect x="20" y="52" width="120" height="22" rx="4" fill="#0891b2"/>
+                            <text x="80" y="67" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="10">Célula 1 (4.2V)</text>
+                            <rect x="20" y="80" width="120" height="22" rx="4" fill="#0891b2"/>
+                            <text x="80" y="95" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="10">Célula 2 (4.2V)</text>
+                            <rect x="20" y="108" width="120" height="22" rx="4" fill="#0891b2"/>
+                            <text x="80" y="123" text-anchor="middle" fill="#fff" font-family="JetBrains Mono" font-size="10">Célula 3 (4.2V)</text>
+                        </g>
+
+                        <!-- ==================== MÓDULO 2: PLACA BMS 3S 20A ==================== -->
+                        <g transform="translate(245, 50)">
+                            <rect x="0" y="0" width="150" height="150" rx="10" fill="#161922" stroke="#10b981" stroke-width="2"/>
+                            <text x="75" y="24" text-anchor="middle" fill="#10b981" font-family="JetBrains Mono" font-size="12" font-weight="bold">BMS 3S 20A</text>
+                            <text x="75" y="40" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="10">Proteção & Balance</text>
+                            <!-- Terminais -->
+                            <text x="14" y="66" fill="#cbd5e1" font-family="JetBrains Mono" font-size="10">B+ (12.6V)</text>
+                            <text x="14" y="86" fill="#cbd5e1" font-family="JetBrains Mono" font-size="10">B2 (8.4V)</text>
+                            <text x="14" y="106" fill="#cbd5e1" font-family="JetBrains Mono" font-size="10">B1 (4.2V)</text>
+                            <text x="14" y="126" fill="#cbd5e1" font-family="JetBrains Mono" font-size="10">B- (0V)</text>
+
+                            <text x="136" y="75" text-anchor="end" fill="#f87171" font-family="JetBrains Mono" font-size="11" font-weight="bold">P+</text>
+                            <text x="136" y="115" text-anchor="end" fill="#94a3b8" font-family="JetBrains Mono" font-size="11" font-weight="bold">P-</text>
+                        </g>
+
+                        <!-- CABOS DE BALANCEAMENTO BATERIA -> BMS -->
+                        <g class="circuit-power">
+                            <line x1="190" y1="63" x2="245" y2="63" stroke="#ef4444" stroke-width="2.5"/>
+                            <line x1="190" y1="83" x2="245" y2="83" stroke="#f59e0b" stroke-width="2"/>
+                            <line x1="190" y1="103" x2="245" y2="103" stroke="#eab308" stroke-width="2"/>
+                            <line x1="190" y1="123" x2="245" y2="123" stroke="#64748b" stroke-width="2.5"/>
+                        </g>
+
+                        <!-- ==================== PORTA DE CARREGAMENTO DC JACK ==================== -->
+                        <g transform="translate(245, 255)">
+                            <rect x="0" y="0" width="150" height="75" rx="10" fill="#161922" stroke="#f59e0b" stroke-width="2"/>
+                            <text x="75" y="24" text-anchor="middle" fill="#fbbf24" font-family="JetBrains Mono" font-size="11" font-weight="bold">JACK DC 5.5×2.1mm</text>
+                            <text x="75" y="42" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="10">Carregador 12.6V 2A</text>
+                            <text x="75" y="60" text-anchor="middle" fill="#34d399" font-family="JetBrains Mono" font-size="9">Liga direto a P+ / P-</text>
+                        </g>
+                        <!-- Ligações Jack DC -> BMS P+/P- -->
+                        <g class="circuit-power">
+                            <path d="M 395 280 L 420 280 L 420 121 L 395 121" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="4 2"/>
+                            <path d="M 395 305 L 430 305 L 430 161 L 395 161" fill="none" stroke="#64748b" stroke-width="2" stroke-dasharray="4 2"/>
+                        </g>
+
+                        <!-- ==================== INTERRUPTOR PRINCIPAL + FUSÍVEL ==================== -->
+                        <g transform="translate(465, 45)">
+                            <rect x="0" y="0" width="135" height="65" rx="10" fill="#161922" stroke="#ef4444" stroke-width="2"/>
+                            <text x="67" y="23" text-anchor="middle" fill="#f87171" font-family="JetBrains Mono" font-size="11" font-weight="bold">FUSÍVEL 10A +</text>
+                            <text x="67" y="39" text-anchor="middle" fill="#f87171" font-family="JetBrains Mono" font-size="11" font-weight="bold">SWITCH ON/OFF</text>
+                            <text x="67" y="55" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="9">Corte Geral Positivo</text>
+                        </g>
+
+                        <!-- ==================== MÓDULO STEP-DOWN / BUCK CONVERTER (Para LEDs/Aux) ==================== -->
+                        <g transform="translate(465, 255)">
+                            <rect x="0" y="0" width="135" height="75" rx="10" fill="#161922" stroke="#a855f7" stroke-width="2"/>
+                            <text x="67" y="24" text-anchor="middle" fill="#c084fc" font-family="JetBrains Mono" font-size="11" font-weight="bold">STEP-DOWN LM2596</text>
+                            <text x="67" y="42" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="10">12.6V → 5.0V Regulado</text>
+                            <text x="67" y="60" text-anchor="middle" fill="#e9d5ff" font-family="JetBrains Mono" font-size="9">Alimenta Anéis LED</text>
+                        </g>
+
+                        <!-- CABOS DE POTÊNCIA BMS -> SWITCH -> AMPLIFICADOR & STEP-DOWN -->
+                        <g class="circuit-power">
+                            <!-- P+ para Switch -->
+                            <path d="M 395 121 L 445 121 L 445 78 L 465 78" fill="none" stroke="#ef4444" stroke-width="3.5" class="wire-flow"/>
+                            <!-- Switch para Amplificador VCC -->
+                            <path d="M 600 78 L 655 78" fill="none" stroke="#ef4444" stroke-width="3.5" class="wire-flow"/>
+                            <!-- Derivação Positiva para Step-Down -->
+                            <path d="M 625 78 L 625 280 L 600 280" fill="none" stroke="#ef4444" stroke-width="2.5"/>
+                            <!-- P- (GND) para Amplificador GND -->
+                            <path d="M 395 161 L 655 161" fill="none" stroke="#64748b" stroke-width="3.5"/>
+                            <!-- Derivação GND para Step-Down -->
+                            <path d="M 450 161 L 450 305 L 465 305" fill="none" stroke="#64748b" stroke-width="2.5"/>
+                        </g>
+
+                        <!-- ==================== MÓDULO 3: AMPLIFICADOR TPA3116D2 + BT 5.3 ==================== -->
+                        <g transform="translate(655, 45)">
+                            <rect x="0" y="0" width="165" height="225" rx="12" fill="#161922" stroke="#06b6d4" stroke-width="2.5"/>
+                            <text x="82" y="25" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono" font-size="12" font-weight="bold">AMPLIFICADOR</text>
+                            <text x="82" y="41" text-anchor="middle" fill="#ffffff" font-family="JetBrains Mono" font-size="11">TPA3116D2 + DSP</text>
+                            
+                            <!-- Entradas DC -->
+                            <rect x="8" y="24" width="38" height="18" rx="3" fill="#7f1d1d"/>
+                            <text x="27" y="36" text-anchor="middle" fill="#fca5a5" font-family="JetBrains Mono" font-size="9">VCC+</text>
+                            <rect x="8" y="107" width="38" height="18" rx="3" fill="#1e293b"/>
+                            <text x="27" y="119" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono" font-size="9">GND-</text>
+
+                            <!-- Saídas Colunas -->
+                            <text x="155" y="75" text-anchor="end" fill="#fbbf24" font-family="JetBrains Mono" font-size="10" font-weight="bold">OUT L+ / L-</text>
+                            <text x="155" y="165" text-anchor="end" fill="#fbbf24" font-family="JetBrains Mono" font-size="10" font-weight="bold">OUT R+ / R-</text>
+
+                            <rect x="18" y="185" width="129" height="26" rx="5" fill="#0f172a" stroke="#334155"/>
+                            <text x="82" y="202" text-anchor="middle" fill="#38bdf8" font-family="JetBrains Mono" font-size="9.5">BT 5.3 + AUX IN</text>
+                        </g>
+
+                        <!-- ==================== COLUNAS ESQUERDA & DIREITA (CROSSOVER + DRIVERS) ==================== -->
+                        <!-- Canal Esquerdo -->
+                        <g transform="translate(845, 45)">
+                            <rect x="0" y="0" width="95" height="95" rx="10" fill="#161922" stroke="#f59e0b" stroke-width="2"/>
+                            <text x="47" y="22" text-anchor="middle" fill="#fbbf24" font-family="JetBrains Mono" font-size="11" font-weight="bold">CANAL L</text>
+                            <text x="47" y="42" text-anchor="middle" fill="#e2e8f0" font-family="JetBrains Mono" font-size="9.5">Woofer 4"</text>
+                            <text x="47" y="56" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="9">+ Filtro 3.3µF</text>
+                            <text x="47" y="72" text-anchor="middle" fill="#e2e8f0" font-family="JetBrains Mono" font-size="9.5">Tweeter 1"</text>
+                        </g>
+
+                        <!-- Canal Direito -->
+                        <g transform="translate(845, 165)">
+                            <rect x="0" y="0" width="95" height="95" rx="10" fill="#161922" stroke="#f59e0b" stroke-width="2"/>
+                            <text x="47" y="22" text-anchor="middle" fill="#fbbf24" font-family="JetBrains Mono" font-size="11" font-weight="bold">CANAL R</text>
+                            <text x="47" y="42" text-anchor="middle" fill="#e2e8f0" font-family="JetBrains Mono" font-size="9.5">Woofer 4"</text>
+                            <text x="47" y="56" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono" font-size="9">+ Filtro 3.3µF</text>
+                            <text x="47" y="72" text-anchor="middle" fill="#e2e8f0" font-family="JetBrains Mono" font-size="9.5">Tweeter 1"</text>
+                        </g>
+
+                        <!-- CABOS DE ÁUDIO AMPLIFICADOR -> COLUNAS -->
+                        <g class="circuit-audio">
+                            <!-- L+ / L- -->
+                            <line x1="820" y1="70" x2="845" y2="70" stroke="#ef4444" stroke-width="2.5"/>
+                            <line x1="820" y1="84" x2="845" y2="84" stroke="#94a3b8" stroke-width="2.5"/>
+                            <!-- R+ / R- -->
+                            <line x1="820" y1="190" x2="845" y2="190" stroke="#ef4444" stroke-width="2.5"/>
+                            <line x1="820" y1="204" x2="845" y2="204" stroke="#94a3b8" stroke-width="2.5"/>
+                        </g>
+
+                        <!-- LEGENDA INFERIOR DO DIAGRAMA -->
+                        <g transform="translate(30, 365)" font-family="JetBrains Mono" font-size="11">
+                            <rect x="0" y="0" width="910" height="52" rx="8" fill="#111318" stroke="#262b36"/>
+                            <line x1="20" y1="26" x2="55" y2="26" stroke="#ef4444" stroke-width="3.5"/>
+                            <text x="65" y="30" fill="#e2e8f0">Positivo +12.6V (Cabo Silicone 16AWG)</text>
+
+                            <line x1="335" y1="26" x2="370" y2="26" stroke="#64748b" stroke-width="3.5"/>
+                            <text x="380" y="30" fill="#e2e8f0">Massa / GND 0V (16AWG)</text>
+
+                            <line x1="585" y1="26" x2="620" y2="26" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="4 2"/>
+                            <text x="630" y="30" fill="#e2e8f0">Sinal Balanceamento / Aux 5V</text>
+                        </g>
+                    </svg>
+                </div>
+
+                <!-- Notas Críticas de Segurança Elétrica -->
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-4 rounded-xl bg-rose-950/25 border border-rose-500/30 flex items-start gap-3">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-400 shrink-0 mt-0.5"></i>
+                        <div class="text-xs text-slate-300 leading-relaxed">
+                            <strong class="text-rose-400 block mb-1">Atenção às Células 18650:</strong>
+                            Nunca solde diretamente nos polos das baterias com ferro de soldar comum por mais de 2 segundos. Use fita de níquel com soldadura por pontos (spot welder) ou suportes de bateria de alta corrente.
+                        </div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-amberpro-950/25 border border-amberpro-500/30 flex items-start gap-3">
+                        <i data-lucide="shield-check" class="w-5 h-5 text-amberpro-400 shrink-0 mt-0.5"></i>
+                        <div class="text-xs text-slate-300 leading-relaxed">
+                            <strong class="text-amberpro-400 block mb-1">Ativação Inicial da BMS:</strong>
+                            Após ligar as células à placa BMS 3S, poderá ser necessário ligar o carregador de 12.6V durante 2 segundos para "acordar" a saída P+/P- pela primeira vez.
+                        </div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-cyanpro-950/25 border border-cyanpro-500/30 flex items-start gap-3">
+                        <i data-lucide="sliders" class="w-5 h-5 text-cyanpro-400 shrink-0 mt-0.5"></i>
+                        <div class="text-xs text-slate-300 leading-relaxed">
+                            <strong class="text-cyanpro-400 block mb-1">Proteção dos Tweeters:</strong>
+                            É obrigatório colocar um condensador bipolar (não polarizado) de <strong class="text-white">3.3µF / 100V</strong> em série com o polo positivo de cada tweeter para bloquear frequências graves.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. GUIA DE MONTAGEM PASSO-A-PASSO -->
+    <section id="montagem" class="py-16 border-b border-industrial-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="mb-10">
+                <span class="text-xs font-mono uppercase tracking-widest text-amberpro-500 font-semibold">04 // WORKSHOP & CONSTRUÇÃO</span>
+                <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">Guia de Montagem Passo-a-Passo</h2>
+                <p class="text-sm text-slate-400 mt-1">Sequência recomendada de fabricação para garantir estanquidade acústica e acabamento profissional.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
+                <!-- Passo 1 -->
+                <div class="bg-industrial-900 border border-industrial-800 rounded-2xl p-5 flex flex-col justify-between relative group hover:border-amberpro-500/50 transition-all">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 rounded-md bg-amberpro-500/15 text-amberpro-400 font-mono text-xs font-bold">PASSO 01</span>
+                            <i data-lucide="ruler" class="w-5 h-5 text-slate-500 group-hover:text-amberpro-400 transition-colors"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-white mb-2">Corte & Colagem MDF</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Corte os painéis em MDF 15mm (CNC ou serra circular). Cole as divisórias internas das câmaras esquerda e direita com cola branca D3 e grampos. Vede todos os cantos interiores com silicone neutro.
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-industrial-800 text-[11px] font-mono text-slate-500">
+                        SECAGEM: 12 HORAS
+                    </div>
+                </div>
+
+                <!-- Passo 2 -->
+                <div class="bg-industrial-900 border border-industrial-800 rounded-2xl p-5 flex flex-col justify-between relative group hover:border-amberpro-500/50 transition-all">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 rounded-md bg-amberpro-500/15 text-amberpro-400 font-mono text-xs font-bold">PASSO 02</span>
+                            <i data-lucide="layers" class="w-5 h-5 text-slate-500 group-hover:text-amberpro-400 transition-colors"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-white mb-2">Isolamento Acústico</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Revestir as paredes internas das duas câmaras dos woofers com espuma acústica alveolar de 20mm ou lã de poliéster (dacron). Isto elimina ondas estacionárias e aumenta o volume acústico virtual em ~15%.
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-industrial-800 text-[11px] font-mono text-slate-500">
+                        DENSIDADE: 25 KG/M³
+                    </div>
+                </div>
+
+                <!-- Passo 3 -->
+                <div class="bg-industrial-900 border border-industrial-800 rounded-2xl p-5 flex flex-col justify-between relative group hover:border-cyanpro-500/50 transition-all">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 rounded-md bg-cyanpro-500/15 text-cyanpro-400 font-mono text-xs font-bold">PASSO 03</span>
+                            <i data-lucide="cpu" class="w-5 h-5 text-slate-500 group-hover:text-cyanpro-400 transition-colors"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-white mb-2">Soldadura & Eletrónica</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Monte o pack 3S 18650, ligue a BMS 20A e fixe-os na câmara central com espuma EVA de alta densidade. Instale o interruptor, o fusível de 10A e regule o módulo Step-Down para exatamente 5.0V antes de ligar os LEDs.
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-industrial-800 text-[11px] font-mono text-slate-500">
+                        TESTAR COM MULTÍMETRO
+                    </div>
+                </div>
+
+                <!-- Passo 4 -->
+                <div class="bg-industrial-900 border border-industrial-800 rounded-2xl p-5 flex flex-col justify-between relative group hover:border-cyanpro-500/50 transition-all">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 rounded-md bg-cyanpro-500/15 text-cyanpro-400 font-mono text-xs font-bold">PASSO 04</span>
+                            <i data-lucide="speaker" class="w-5 h-5 text-slate-500 group-hover:text-cyanpro-400 transition-colors"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-white mb-2">Montagem dos Drivers</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Passe os cabos de coluna pelas divisórias e sele os furos com cola quente. Aplique fita vedante de neoprene nos aros dos woofers, tweeters e radiador passivo antes de aparafusar com porcas de cravar M4.
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-industrial-800 text-[11px] font-mono text-slate-500">
+                        VEDAÇÃO 100% ESTANQUE
+                    </div>
+                </div>
+
+                <!-- Passo 5 -->
+                <div class="bg-industrial-900 border border-industrial-800 rounded-2xl p-5 flex flex-col justify-between relative group hover:border-emerald-500/50 transition-all">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 rounded-md bg-emerald-500/15 text-emerald-400 font-mono text-xs font-bold">PASSO 05</span>
+                            <i data-lucide="check-circle-2" class="w-5 h-5 text-slate-500 group-hover:text-emerald-400 transition-colors"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-white mb-2">Testes & Sintonia</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Execute um varrimento (sweep) de 30Hz a 150Hz a volume médio para verificar ausência de fugas de ar nas juntas ou vibrações de cabos internos. Ajuste o ganho no DSP Bluetooth para equilíbrio tonal ideal.
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-industrial-800 text-[11px] font-mono text-emerald-400">
+                        PRONTO A TOCAR!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. CALCULADORA / SIMULADOR DE AUTONOMIA DA BATERIA -->
+    <section id="autonomia" class="py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="mb-10">
+                <span class="text-xs font-mono uppercase tracking-widest text-cyanpro-400 font-semibold">05 // GESTÃO ENERGÉTICA</span>
+                <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">Simulador de Autonomia da Bateria</h2>
+                <p class="text-sm text-slate-400 mt-1">Estime o tempo de reprodução contínua com base na configuração de células 18650 e no volume de escuta.</p>
+            </div>
+
+            <div class="bg-industrial-900 border border-industrial-800 rounded-2xl p-6 sm:p-8 shadow-2xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                
+                <!-- Controlos do Simulador (7 Colunas) -->
+                <div class="lg:col-span-7 space-y-6">
+                    <!-- Seletor de Configuração do Pack -->
+                    <div>
+                        <label class="block text-xs font-mono text-slate-400 uppercase mb-3">1. Configuração do Pack de Baterias (11.1V Nominal)</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button onclick="setBatteryConfig('3S1P')" id="pack-3s1p" class="pack-btn p-4 rounded-xl border-2 border-amberpro-500 bg-amberpro-500/10 text-left transition-all">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-mono font-bold text-white text-sm">3S1P (3 Células)</span>
+                                    <span class="text-xs font-mono px-2 py-0.5 rounded bg-amberpro-500 text-industrial-950 font-bold">LEVE</span>
+                                </div>
+                                <div class="text-xs text-slate-300 mt-1 font-mono">3.500 mAh • 38.8 Wh</div>
+                            </button>
+
+                            <button onclick="setBatteryConfig('3S2P')" id="pack-3s2p" class="pack-btn p-4 rounded-xl border border-industrial-700 bg-industrial-950/60 hover:border-industrial-600 text-left transition-all">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-mono font-bold text-white text-sm">3S2P (6 Células)</span>
+                                    <span class="text-xs font-mono px-2 py-0.5 rounded bg-cyanpro-500/20 text-cyanpro-400 border border-cyanpro-500/30">LONGA DURAÇÃO</span>
+                                </div>
+                                <div class="text-xs text-slate-400 mt-1 font-mono">7.000 mAh • 77.7 Wh</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Slider de Volume de Escuta -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label for="volume-slider" class="text-xs font-mono text-slate-400 uppercase">2. Nível de Volume Médio de Escuta</label>
+                            <span id="volume-display" class="font-mono font-bold text-lg text-amberpro-400">50%</span>
+                        </div>
+                        <input id="volume-slider" type="range" min="10" max="100" value="50" oninput="updateBatterySimulator()" class="w-full">
+                        <div class="flex justify-between text-[11px] font-mono text-slate-500 mt-2">
+                            <span>10% (Ambiente)</span>
+                            <span>50% (Sala / Escritório)</span>
+                            <span>80% (Exterior)</span>
+                            <span>100% (Festa Max)</span>
+                        </div>
+                    </div>
+
+                    <!-- Toggle LEDs no Consumo -->
+                    <div class="flex items-center justify-between p-4 rounded-xl bg-industrial-950/70 border border-industrial-800">
+                        <div>
+                            <div class="text-sm font-medium text-white">Incluir Consumo dos Anéis LED Âmbar</div>
+                            <div class="text-xs text-slate-400">Adiciona ~1.8W de consumo contínuo ao circuito de 5V</div>
+                        </div>
+                        <input type="checkbox" id="sim-leds-check" checked onchange="updateBatterySimulator()" class="w-5 h-5 accent-amberpro-500 rounded cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- Painel de Resultados (5 Colunas) -->
+                <div class="lg:col-span-5 bg-industrial-950 border border-industrial-800 rounded-2xl p-6 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between text-xs font-mono text-slate-400 mb-4">
+                            <span>AUTONOMIA ESTIMADA</span>
+                            <span id="sim-mode-badge" class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">EFICIÊNCIA ALTA</span>
+                        </div>
+
+                        <div class="flex items-baseline gap-2 my-2">
+                            <span id="sim-hours" class="text-5xl sm:text-6xl font-extrabold font-mono text-white tracking-tight">9.2</span>
+                            <span class="text-xl font-mono text-amberpro-500 font-bold">HORAS</span>
+                        </div>
+
+                        <!-- Barra Visual de Carga / Descarga -->
+                        <div class="w-full h-3 bg-industrial-900 rounded-full overflow-hidden my-5 border border-industrial-800 p-0.5">
+                            <div id="sim-bar" class="h-full rounded-full bg-gradient-to-r from-emerald-500 via-cyanpro-400 to-amberpro-500 transition-all duration-300" style="width: 65%"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 pt-4 border-t border-industrial-800 font-mono text-xs">
+                        <div class="bg-industrial-900/80 p-3 rounded-xl">
+                            <span class="text-slate-500 block text-[10px]">POTÊNCIA MÉDIA</span>
+                            <span id="sim-watts" class="text-slate-200 font-bold text-sm">4.2 W</span>
+                        </div>
+                        <div class="bg-industrial-900/80 p-3 rounded-xl">
+                            <span class="text-slate-500 block text-[10px]">PRESSÃO SONORA</span>
+                            <span id="sim-spl" class="text-cyanpro-400 font-bold text-sm">~86 dB SPL</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-industrial-800 bg-industrial-950 py-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-slate-500">
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-amberpro-500"></span>
+                <span class="text-slate-300 font-semibold">SONIC-X1 DIY AUDIO PROJECT</span>
+                <span>• Engenharia Acústica Portátil</span>
+            </div>
+            <div>
+                Desenvolvido para entusiastas DIY Hi-Fi • Especificações métricas (mm / €)
+            </div>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT INTERATIVO -->
+    <script>
+        // Inicializar ícones Lucide
+        lucide.createIcons();
+
+        // Navegação suave
+        function scrollToSection(id) {
+            const el = document.getElementById(id);
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ==========================================
+        // 1. VISUALIZADOR 2D / MODO RAIO-X & LEDS
+        // ==========================================
+        let isXray = false;
+        let ledsOn = true;
+
+        function toggleXray() {
+            isXray = !isXray;
+            const internalLayer = document.getElementById('internal-structure');
+            const exteriorLayer = document.getElementById('exterior-front');
+            const label = document.getElementById('xray-label');
+            const btn = document.getElementById('btn-xray');
+
+            if (isXray) {
+                internalLayer.setAttribute('opacity', '1');
+                exteriorLayer.setAttribute('opacity', '0.16');
+                label.textContent = 'VISTA RAIO-X: ON';
+                btn.classList.add('border-cyanpro-400', 'bg-cyanpro-500/15', 'text-cyanpro-300');
+            } else {
+                internalLayer.setAttribute('opacity', '0');
+                exteriorLayer.setAttribute('opacity', '1');
+                label.textContent = 'VISTA RAIO-X: OFF';
+                btn.classList.remove('border-cyanpro-400', 'bg-cyanpro-500/15', 'text-cyanpro-300');
+            }
+        }
+
+        function toggleLeds() {
+            ledsOn = !ledsOn;
+            const ringL = document.getElementById('led-ring-left');
+            const ringR = document.getElementById('led-ring-right');
+            const label = document.getElementById('led-label');
+            const btn = document.getElementById('btn-leds');
+
+            if (ledsOn) {
+                ringL.setAttribute('opacity', '0.95');
+                ringR.setAttribute('opacity', '0.95');
+                label.textContent = 'LEDS ANEL: ON';
+                btn.classList.add('bg-amberpro-500/15', 'text-amberpro-400', 'border-amberpro-500/50');
+                btn.classList.remove('bg-industrial-800', 'text-slate-400', 'border-industrial-600');
+            } else {
+                ringL.setAttribute('opacity', '0.08');
+                ringR.setAttribute('opacity', '0.08');
+                label.textContent = 'LEDS ANEL: OFF';
+                btn.classList.remove('bg-amberpro-500/15', 'text-amberpro-400', 'border-amberpro-500/50');
+                btn.classList.add('bg-industrial-800', 'text-slate-400', 'border-industrial-600');
+            }
+        }
+
+        // ==========================================
+        // 2. GERADOR DE TESTES DE ÁUDIO (WEB AUDIO API)
+        // ==========================================
+        let audioCtx = null;
+        let activeOscillators = [];
+        let audioTimeout = null;
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function setSpeakerAnimation(active, speed = '0.4s') {
+            const wL = document.getElementById('woofer-left');
+            const wR = document.getElementById('woofer-right');
+            const pr = document.getElementById('passive-radiator');
+            const tL = document.getElementById('tweeter-left');
+            const tR = document.getElementById('tweeter-right');
+
+            [wL, wR, pr].forEach(el => {
+                if (active) {
+                    el.style.setProperty('--beat-speed', speed);
+                    el.classList.add('woofer-active');
+                } else {
+                    el.classList.remove('woofer-active');
+                }
+            });
+
+            [tL, tR].forEach(el => {
+                if (active) el.classList.add('tweeter-active');
+                else el.classList.remove('tweeter-active');
+            });
+        }
+
+        function stopAudioTest() {
+            if (audioTimeout) clearTimeout(audioTimeout);
+            activeOscillators.forEach(node => {
+                try { node.stop(); node.disconnect(); } catch (e) {}
+            });
+            activeOscillators = [];
+            setSpeakerAnimation(false);
+
+            document.getElementById('btn-audio-stop').classList.add('hidden');
+            document.querySelectorAll('.audio-btn').forEach(b => b.classList.remove('ring-2', 'ring-amberpro-500', 'text-white'));
+            
+            const dot = document.getElementById('audio-status-dot');
+            const txt = document.getElementById('audio-status-text');
+            dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-600';
+            txt.textContent = 'ÁUDIO EM STANDBY • Clique num botão acima para testar a resposta acústica';
+        }
+
+        function playAudioTest(type) {
+            stopAudioTest();
+            initAudioContext();
+
+            const now = audioCtx.currentTime;
+            const masterGain = audioCtx.createGain();
+            masterGain.gain.setValueAtTime(0.18, now);
+            masterGain.connect(audioCtx.destination);
+
+            const dot = document.getElementById('audio-status-dot');
+            const txt = document.getElementById('audio-status-text');
+            document.getElementById('btn-audio-stop').classList.remove('hidden');
+
+            if (type === 'bass') {
+                // Teste Sub-Bass 55Hz (ressonância próxima do radiador passivo)
+                const osc = audioCtx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(55, now);
+                osc.connect(masterGain);
+                osc.start(now);
+                activeOscillators.push(osc);
+
+                setSpeakerAnimation(true, '0.28s');
+                document.getElementById('btn-audio-bass').classList.add('ring-2', 'ring-amberpro-500', 'text-white');
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-amberpro-500 animate-ping';
+                txt.textContent = 'A REPRODUZIR: Onda Sinusoidal 55Hz (Excursão Máxima do Radiador Passivo)';
+                audioTimeout = setTimeout(stopAudioTest, 5000);
+
+            } else if (type === 'sweep') {
+                // Varrimento logarítmico 40Hz -> 8000Hz
+                const osc = audioCtx.createOscillator();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(40, now);
+                osc.frequency.exponentialRampToValueAtTime(8000, now + 5.5);
+                masterGain.gain.setValueAtTime(0.12, now);
+                osc.connect(masterGain);
+                osc.start(now);
+                activeOscillators.push(osc);
+
+                setSpeakerAnimation(true, '0.18s');
+                document.getElementById('btn-audio-sweep').classList.add('ring-2', 'ring-amberpro-500', 'text-white');
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-cyanpro-400 animate-ping';
+                txt.textContent = 'A REPRODUZIR: Varrimento de Frequência (40Hz Sub → Crossover 3.2kHz → Tweeter)';
+                audioTimeout = setTimeout(stopAudioTest, 5600);
+
+            } else if (type === 'chord') {
+                // Acorde Hi-Fi rico em harmónicos (Fá Maior 9)
+                const freqs = [87.31, 174.61, 220.00, 261.63, 329.63, 392.00];
+                masterGain.gain.setValueAtTime(0.01, now);
+                masterGain.gain.linearRampToValueAtTime(0.16, now + 0.4);
+                masterGain.gain.exponentialRampToValueAtTime(0.001, now + 4.5);
+
+                freqs.forEach((f, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    osc.type = idx === 0 ? 'sine' : 'triangle';
+                    osc.frequency.setValueAtTime(f, now);
+                    osc.connect(masterGain);
+                    osc.start(now);
+                    activeOscillators.push(osc);
+                });
+
+                setSpeakerAnimation(true, '0.45s');
+                document.getElementById('btn-audio-chord').classList.add('ring-2', 'ring-amberpro-500', 'text-white');
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping';
+                txt.textContent = 'A REPRODUZIR: Acorde Harmónico Estéreo Hi-Fi (Teste de Separação Tonal)';
+                audioTimeout = setTimeout(stopAudioTest, 4600);
+            }
+        }
+
+        // ==========================================
+        // 3. LISTA DE MATERIAIS (BOM) INTERATIVA
+        // ==========================================
+        const bomItems = [
+            { id: 1, name: "Placa Amplificadora TPA3116D2 + BT 5.3", spec: "2×50W RMS, DSP integrado, entrada AUX, DC 12-24V", qty: 1, price: 24.50, owned: false },
+            { id: 2, name: "Woofers Hi-Fi 4 Polegadas (Par)", spec: "4 Ohms, 50W RMS, cone fibra vidro/kevlar, curso longo", qty: 2, price: 36.00, owned: false },
+            { id: 3, name: "Tweeters Domo de Seda 1 Polegada (Par)", spec: "4 Ohms, 25W, íman neodímio + condensadores 3.3µF", qty: 2, price: 18.00, owned: false },
+            { id: 4, name: "Radiador Passivo Retangular 4\"×6\"", spec: "Suspensão borracha butílica, sintonizado ~48Hz", qty: 1, price: 12.50, owned: false },
+            { id: 5, name: "Células Li-Ion 18650 (3500mAh Real)", spec: "Samsung 35E ou LG MJ1 (alta descarga 10A)", qty: 3, price: 19.50, owned: false },
+            { id: 6, name: "Placa Proteção BMS 3S 20A 12.6V", spec: "Com balanceamento de células e proteção curto-circuito", qty: 1, price: 5.50, owned: false },
+            { id: 7, name: "Conversor Step-Down DC-DC LM2596", spec: "Regulador ajustável 12.6V para 5.0V (alimentação LEDs)", qty: 1, price: 3.20, owned: false },
+            { id: 8, name: "Anéis LED COB Âmbar 100mm (Par)", spec: "5V/12V difusor contínuo para contorno dos woofers", qty: 2, price: 8.80, owned: false },
+            { id: 9, name: "Painel MDF Hidrófugo 15mm (Cortado)", spec: "Placa 1200×600mm + cola D3 + espuma acústica interna", qty: 1, price: 16.00, owned: false },
+            { id: 10, name: "Kit Conectores, Switch, Fusível & Cabos", spec: "Jack DC 5.5×2.1, Interruptor metálico, cabo 16AWG, pés", qty: 1, price: 11.00, owned: false },
+            { id: 11, name: "Carregador Li-Ion 12.6V 2A", spec: "Fonte dedicada CC/CV com LED indicador de carga completa", qty: 1, price: 9.50, owned: false }
+        ];
+
+        function renderBomTable() {
+            const tbody = document.getElementById('bom-table-body');
+            tbody.innerHTML = '';
+
+            let total = 0;
+            let ownedTotal = 0;
+            let ownedCount = 0;
+
+            bomItems.forEach(item => {
+                total += item.price;
+                if (item.owned) {
+                    ownedTotal += item.price;
+                    ownedCount++;
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = `transition-colors cursor-pointer ${item.owned ? 'bg-emerald-950/15 hover:bg-emerald-950/25' : 'hover:bg-industrial-800/50'}`;
+                tr.onclick = () => toggleBomItem(item.id);
+
+                tr.innerHTML = `
+                    <td class="py-3.5 px-4 text-center">
+                        <input type="checkbox" ${item.owned ? 'checked' : ''} onclick="event.stopPropagation(); toggleBomItem(${item.id})" class="w-4 h-4 accent-emerald-500 rounded cursor-pointer">
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <div class="font-medium ${item.owned ? 'line-through text-slate-500' : 'text-slate-100'}">${item.name}</div>
+                        <div class="text-xs text-slate-400 md:hidden mt-0.5">${item.spec}</div>
+                    </td>
+                    <td class="py-3.5 px-4 text-xs text-slate-400 hidden md:table-cell">${item.spec}</td>
+                    <td class="py-3.5 px-4 text-center font-mono text-xs text-slate-300">${item.qty}x</td>
+                    <td class="py-3.5 px-4 text-right font-mono font-semibold ${item.owned ? 'text-emerald-400' : 'text-amberpro-400'}">€${item.price.toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const remaining = total - ownedTotal;
+            const pct = Math.round((ownedCount / bomItems.length) * 100);
+
+            document.getElementById('bom-total-price').textContent = `€${total.toFixed(2)}`;
+            document.getElementById('bom-owned-price').textContent = `€${ownedTotal.toFixed(2)}`;
+            document.getElementById('bom-remaining-price').textContent = `€${remaining.toFixed(2)}`;
+            document.getElementById('nav-budget-badge').textContent = `€${remaining.toFixed(2)}`;
+
+            document.getElementById('bom-progress-text').textContent = `${ownedCount} / ${bomItems.length} itens (${pct}%)`;
+            document.getElementById('bom-progress-bar').style.width = `${pct}%`;
+        }
+
+        function toggleBomItem(id) {
+            const item = bomItems.find(i => i.id === id);
+            if (item) {
+                item.owned = !item.owned;
+                renderBomTable();
+            }
+        }
+
+        function toggleAllBom(state) {
+            bomItems.forEach(i => i.owned = state);
+            renderBomTable();
+        }
+
+        // ==========================================
+        // 4. FILTRO DO ESQUEMA ELÉTRICO
+        // ==========================================
+        function highlightCircuit(mode) {
+            const powerEls = document.querySelectorAll('.circuit-power');
+            const audioEls = document.querySelectorAll('.circuit-audio');
+
+            if (mode === 'all') {
+                powerEls.forEach(el => el.style.opacity = '1');
+                audioEls.forEach(el => el.style.opacity = '1');
+            } else if (mode === 'power') {
+                powerEls.forEach(el => el.style.opacity = '1');
+                audioEls.forEach(el => el.style.opacity = '0.18');
+            } else if (mode === 'audio') {
+                powerEls.forEach(el => el.style.opacity = '0.18');
+                audioEls.forEach(el => el.style.opacity = '1');
+            }
+        }
+
+        // ==========================================
+        // 5. SIMULADOR DE AUTONOMIA DA BATERIA
+        // ==========================================
+        let selectedPack = '3S1P';
+
+        function setBatteryConfig(pack) {
+            selectedPack = pack;
+            const btn1 = document.getElementById('pack-3s1p');
+            const btn2 = document.getElementById('pack-3s2p');
+
+            if (pack === '3S1P') {
+                btn1.className = 'pack-btn p-4 rounded-xl border-2 border-amberpro-500 bg-amberpro-500/10 text-left transition-all';
+                btn2.className = 'pack-btn p-4 rounded-xl border border-industrial-700 bg-industrial-950/60 hover:border-industrial-600 text-left transition-all';
+            } else {
+                btn2.className = 'pack-btn p-4 rounded-xl border-2 border-cyanpro-400 bg-cyanpro-500/10 text-left transition-all';
+                btn1.className = 'pack-btn p-4 rounded-xl border border-industrial-700 bg-industrial-950/60 hover:border-industrial-600 text-left transition-all';
+            }
+            updateBatterySimulator();
+        }
+
+        function updateBatterySimulator() {
+            const vol = parseInt(document.getElementById('volume-slider').value, 10);
+            const includeLeds = document.getElementById('sim-leds-check').checked;
+            document.getElementById('volume-display').textContent = `${vol}%`;
+
+            // Capacidade útil em Wh (considerando 90% de profundidade de descarga segura)
+            const totalWh = selectedPack === '3S1P' ? 35.0 : 70.0;
+
+            // Consumo base do módulo BT + DSP + repouso amp (~1.2W)
+            // Consumo musical dinâmico (fator de crista musical ~1/6 do pico senoidal)
+            const idleWatts = 1.2;
+            const ledWatts = includeLeds ? 1.8 : 0;
+            const audioWatts = Math.pow(vol / 100, 2.1) * 18.5;
+
+            const totalWatts = idleWatts + ledWatts + audioWatts;
+            const hours = totalWh / totalWatts;
+
+            // Estimativa de SPL a 1 metro
+            const spl = Math.round(68 + (vol * 0.34));
+
+            document.getElementById('sim-hours').textContent = hours.toFixed(1);
+            document.getElementById('sim-watts').textContent = `${totalWatts.toFixed(1)} W`;
+            document.getElementById('sim-spl').textContent = `~${spl} dB SPL`;
+
+            // Barra proporcional (máx referência 24h)
+            const barPct = Math.min(100, Math.round((hours / 24) * 100));
+            document.getElementById('sim-bar').style.width = `${barPct}%`;
+
+            const badge = document.getElementById('sim-mode-badge');
+            if (vol <= 55) {
+                badge.textContent = 'EFICIÊNCIA ALTA';
+                badge.className = 'px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
+            } else if (vol <= 80) {
+                badge.textContent = 'POTÊNCIA MODERADA';
+                badge.className = 'px-2 py-0.5 rounded bg-amberpro-500/15 text-amberpro-400 border border-amberpro-500/30';
+            } else {
+                badge.textContent = 'DESCARGA INTENSA';
+                badge.className = 'px-2 py-0.5 rounded bg-rose-500/15 text-rose-400 border border-rose-500/30';
+            }
+        }
+
+        // Inicialização ao carregar
+        window.addEventListener('DOMContentLoaded', () => {
+            renderBomTable();
+            updateBatterySimulator();
+        });
+    </script>
+</body>
+</html>
